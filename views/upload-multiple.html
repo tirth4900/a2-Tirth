@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Upload Multiple Files</title>
+  <title>Upload Multiple Files</title>
 </head>
 <body>
-<h1>Upload Multiple Files</h1>
-<form action="/upload-multiple" method="POST" enctype="multipart/form-data">
-<input type="file" name="files" multiple />
-<button type="submit">Upload</button>
-</form>
+  <h1>Upload Multiple Files</h1>
+  <p style="color: red;">Note: You can upload a maximum of 15 files at a time.</p>
+  <form action="/upload-multiple" method="POST" enctype="multipart/form-data">
+    <input type="file" name="files" multiple />
+    <button type="submit">Upload</button>
+  </form>
 </body>
 </html>

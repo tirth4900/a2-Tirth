@@ -11,7 +11,7 @@ const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
 
-// Middleware:
+// Middleware
 app.use(express.urlencoded({ extended: true })); // Handle normal forms -> url encoded
 app.use(express.json()); // Handle raw JSON data
 
@@ -24,7 +24,7 @@ if (!fs.existsSync(uploadDir)) {
 // Set up storage for multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./upload");
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     cb(null, `${Date.now()}-${file.originalname}`);
@@ -38,12 +38,11 @@ app.use(express.static(path.join(__dirname, "views")));
 
 // Root route
 app.get('/', (req, res) => {
-  res.send('Welcome to Assignment 2');
+  res.send('Welcome');
 });
 
 // Single file upload route
-app
-  .route("/upload")
+app.route("/upload")
   .get((req, res) => {
     res.sendFile(path.join(__dirname, "views", "upload.html"));
   })
@@ -55,8 +54,7 @@ app
   });
 
 // Multiple file upload route
-app
-  .route("/upload-multiple")
+app.route("/upload-multiple")
   .get((req, res) => {
     res.sendFile(path.join(__dirname, "views", "upload-multiple.html"));
   })
@@ -70,23 +68,18 @@ app
 
 // Fetch single random file route
 app.get("/fetch-single", (req, res) => {
-  let uploadDir = path.join(__dirname, "upload");
-  let uploads = fs.readdirSync(uploadDir);
+  const uploads = fs.readdirSync(uploadDir);
 
   // Log the list of all images
   console.log("All images:", uploads);
 
   // Add error handling
   if (uploads.length === 0) {
-    return res.status(503).send({
-      message: "No images",
-    });
+    return res.status(503).send({ message: "No images" });
   }
 
-  let max = uploads.length - 1;
-  let min = 0;
-  let index = Math.round(Math.random() * (max - min) + min);
-  let randomImage = uploads[index];
+  const randomIndex = Math.floor(Math.random() * uploads.length);
+  const randomImage = uploads[randomIndex];
 
   // Log the randomly selected image
   console.log("Randomly selected image:", randomImage);
@@ -96,14 +89,11 @@ app.get("/fetch-single", (req, res) => {
 
 // Fetch all images route
 app.get("/fetch-all-images", (req, res) => {
-  const directoryPath = path.join(__dirname, "upload");
-  const files = fs.readdirSync(directoryPath);
-  const fileContents = files.map((file) => {
-    return {
-      name: file,
-      content: fs.readFileSync(path.join(directoryPath, file), "base64")
-    };
-  });
+  const files = fs.readdirSync(uploadDir);
+  const fileContents = files.map((file) => ({
+    name: file,
+    content: fs.readFileSync(path.join(uploadDir, file), "base64")
+  }));
 
   res.json(fileContents);
 });
@@ -115,26 +105,30 @@ app.get("/gallery", (req, res) => {
 
 // Fetch all files with pagination
 app.get("/fetch-all/pages/:index", (req, res) => {
-  const ITEMS_PER_PAGE = parseInt(req.query.items_per_page, 10) || 3; // Number of items per page
+  const ITEMS_PER_PAGE = parseInt(req.query.items_per_page, 10) || 3;
   const pageIndex = parseInt(req.params.index, 10);
+
   if (isNaN(pageIndex) || pageIndex < 1) {
     return res.status(400).send("Invalid page index.");
   }
-  const allFiles = Object.entries(getAllFiles());
+
+  const allFiles = getAllFiles();
   const totalItems = allFiles.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
   if (pageIndex > totalPages) {
     return res.status(404).send("Page not found.");
   }
+
   const startIndex = (pageIndex - 1) * ITEMS_PER_PAGE;
   const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
   const pageItems = allFiles.slice(startIndex, endIndex);
-  const response = {
+
+  res.json({
     page: pageIndex,
     totalPages: totalPages,
-    files: Object.fromEntries(pageItems),
-  };
-  res.json(response);
+    files: pageItems,
+  });
 });
 
 // Fetch total number of images route
@@ -146,29 +140,24 @@ app.get("/total-images", (req, res) => {
 // Fetch random images route
 app.get("/fetch-random-images", (req, res) => {
   const numImages = parseInt(req.query.num, 10);
+
   if (isNaN(numImages) || numImages < 1) {
     return res.status(400).send("Invalid number of images.");
   }
 
   const allFiles = getAllFiles();
-  const totalItems = allFiles.length;
-  const numToFetch = Math.min(numImages, totalItems);
-  const shuffled = allFiles.sort(() => 0.5 - Math.random());
-  const selectedFiles = shuffled.slice(0, numToFetch);
+  const shuffledFiles = allFiles.sort(() => 0.5 - Math.random());
+  const selectedFiles = shuffledFiles.slice(0, Math.min(numImages, allFiles.length));
 
   res.json(selectedFiles);
 });
 
 const getAllFiles = () => {
-  const directoryPath = path.join(__dirname, "upload");
-  const files = fs.readdirSync(directoryPath);
-  const fileContents = files.map((file) => {
-    return {
-      name: file,
-      content: fs.readFileSync(path.join(directoryPath, file), "base64")
-    };
-  });
-  return fileContents;
+  const files = fs.readdirSync(uploadDir);
+  return files.map((file) => ({
+    name: file,
+    content: fs.readFileSync(path.join(uploadDir, file), "base64")
+  }));
 };
 
 // Serve gallery-pagination.html

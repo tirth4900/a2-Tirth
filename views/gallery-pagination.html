@@ -17,10 +17,10 @@
           const gallery = document.getElementById("gallery");
           gallery.innerHTML = "";
 
-          Object.keys(data.files).forEach((fileName) => {
+          data.files.forEach((file) => {
             const img = document.createElement("img");
-            img.src = `data:image/jpeg;base64,${data.files[fileName]}`;
-            img.alt = fileName;
+            img.src = `data:image/jpeg;base64,${file.content}`;
+            img.alt = file.name;
             img.width = 100;
             gallery.appendChild(img);
           });
